@@ -79,7 +79,7 @@ def concatPreData(elemName):
         print('合并中{}'.format(iTime))
         baseDs = xr.concat([baseDs, iDs], dim="time")
     
-    netcdf_file_name = "{}-{}_lon{}_lat{}.{}.nc".format(initTime.format('YYYYMM'), realTimeEndTime.format('YYYYMM'), fixLoc[0], fixLoc[1], elemName)
+    netcdf_file_name = "{}-{}_lon{}_lat{}.{}.nc".format(initTime.format('YYYYMM'), realTimeEndTime.format('YYYYMM'), fixLocUpper[0], fixLocUpper[1], elemName)
     fullPath = os.path.join(current_file_dir, '../data/{}'.format(netcdf_file_name))
     baseDs.to_netcdf(fullPath)
 
