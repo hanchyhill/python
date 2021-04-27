@@ -28,3 +28,4 @@ pnpm-debug.log*
 *.svg
 *.nc
 *.csv
+*.zip
