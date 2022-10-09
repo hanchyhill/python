@@ -10,13 +10,11 @@ fcHr = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36,
 fixLoc = [110.25, 20.125]
 fixLocUpper = [110.25, 20.25]
 elemName = 'sstk'
-eleList = ['visi', 'sstk', 't2mm', 't2md']
-upperEleList = ['temp']# ['rhum', 'temp']
+eleList = ['v10m','u10m','u100','v100'] # 'visi', 'sstk', 't2mm', 't2md',
+upperEleList = ['uwnd','vwnd'] # 'temp','rhum', 'temp',
 modelList = ['ecmwf_fine_his', 'ecmwfthin']
 initTime = arrow.get(2018, 10, 1)
-endTime = arrow.get(2021, 1, 1)
-# initTime = arrow.get(2021, 2, 1)
-# endTime = arrow.get(2021, 3, 1)
+endTime = arrow.get(2021, 3, 1)
 realTimeEndTime = arrow.get(2021,3,1)
 
 def readFixPointData(model='ecmwf_fine_his', year=2018, month=10, elem='visi', fixPoint=[110.25, 20.125]):
@@ -69,12 +67,14 @@ def concatPreData(elemName):
     arrow.Arrow.range('month', initTime, endTime)
     baseDs = readFixPointDataFromPressue(currenModel, initTime.year, initTime.month, elemName, fixLocUpper)
     for iTime in arrow.Arrow.range('month', initTime.shift(months=+1), endTime):  # 迭代日期, 合并数据
+        print(iTime)
         iDs = readFixPointData(currenModel, iTime.year, iTime.month, elemName, fixLocUpper)
         print('合并中{}'.format(iTime))
         baseDs = xr.concat([baseDs, iDs], dim="time")
 
     currenModel = 'ecmwfthin'
     for iTime in arrow.Arrow.range('month', endTime.shift(months=+1), realTimeEndTime):  # 迭代日期, 合并数据
+        print(iTime)
         iDs = readFixPointDataFromPressue(currenModel, iTime.year, iTime.month, elemName, fixLocUpper)
         print('合并中{}'.format(iTime))
         baseDs = xr.concat([baseDs, iDs], dim="time")
@@ -84,8 +84,8 @@ def concatPreData(elemName):
     baseDs.to_netcdf(fullPath)
 
 def main():
-    # for elemName in eleList:
-    #     concatData(elemName)
+    for elemName in eleList:
+        concatData(elemName)
     for elemName in upperEleList:
         concatPreData(elemName)
 
