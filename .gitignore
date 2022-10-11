@@ -3,7 +3,8 @@ node_modules
 /dist
 /public/demo
 dist*.zip
-
+/data
+G7425*
 
 # local env files
 .env.local
