@@ -5,7 +5,7 @@ node_modules
 dist*.zip
 /data
 G7425*
-
+callbacks
 # local env files
 .env.local
 .env.*.local
