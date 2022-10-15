@@ -49,6 +49,13 @@ def convert_nc2csv():
         ids = xr.open_dataset(f'{dir_path}{file_name}')
         ds_single_list.append(ids)
 
+    ds_multi_list = []
+    
+    for name in multi_level_name_list:
+        file_name = f'201810-202205_lon110.25_lat20.25.{name}.nc'
+        ids = xr.open_dataset(f'{dir_path}{file_name}')
+        ds_multi_list.append(ids)
+
     for iHour in fcHour_list:
         print(iHour)
         series_map = dict()
@@ -57,7 +64,16 @@ def convert_nc2csv():
             i_ds = ds_single_list[index]
             i_varname = f'{name_key}{iHour:0>3d}'
             da = i_ds[i_varname]
-            series_map[name_key] = da.values       
+            series_map[name_key] = da.values
+        # TODO: temp. and rhum in 850hPa and 925hPa 计算逆温情况
+        for index in range(len(multi_level_name_list)):
+            name_key = single_level_name_list[index]
+            i_ds = ds_single_list[index]
+            i_varname = f'{name_key}{iHour:0>3d}'
+            da = i_ds[i_varname]
+            # TODO：选择指定层次
+            # series_map[name_key] = da.values
+
         df = pd.DataFrame(series_map)
         df['actual_time'] = init_time + pd.Timedelta(iHour,unit='h')
         df['init_time'] = init_time
