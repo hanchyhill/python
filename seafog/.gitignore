@@ -6,6 +6,8 @@ dist*.zip
 /data
 G7425*
 callbacks
+/callbacks*
+*callbacks*
 # local env files
 .env.local
 .env.*.local
