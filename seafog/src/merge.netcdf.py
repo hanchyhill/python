@@ -3,6 +3,8 @@ import numpy as np
 import os
 import arrow
 import pandas as pd
+import metpy.calc as mpcalc
+from metpy.units import units
 
 # 先取得sstk 的 time
 # 载入所有的dataset
@@ -22,6 +24,13 @@ fcHour_list = list(range(0, 72+1, 3)) + list(range(78, 240+1, 6))
 # fcHour_list = list(range(0, 72+1, 3)) + list(range(78, 168+1, 6))
 single_level_name_list = ['visi','v100','v10m','u100','u10m','t2mm','t2md','sstk']
 multi_level_name_list = ['vwnd','uwnd','temp','rhum']
+levels_selected = [1000.0, 950.0, 925.0, 900.0, 850.0]
+
+multi_level_columns = []
+for multi_name_key in multi_level_name_list:
+    for iLevel in levels_selected:
+        multi_level_columns.append(f'{multi_name_key}{int(iLevel)}')
+
 dir_path = 'H:/github/python/seafog/data/CFdata/concat/'
 
 file_59754 = 'H:/github/python/seafog/data/station/59754.20130101-2022093023.csv'
@@ -29,7 +38,7 @@ df_59754 = pd.read_csv(file_59754,sep=',',na_values=[9999])
 df_59754.index = pd.to_datetime(df_59754["DDATETIME"])
 # print(df_59754.dtypes)
 
-h5_store = pd.HDFStore('ec201810-202205.hdf', mode='w')
+h5_store = pd.HDFStore('ec201810-202205_multiLevel.hdf', mode='w')
 
 def get_time_list(ds):
     da_time = ds['time']
@@ -56,6 +65,9 @@ def convert_nc2csv():
         ids = xr.open_dataset(f'{dir_path}{file_name}')
         ds_multi_list.append(ids)
 
+    ds_t = ds_multi_list[multi_level_name_list.index('temp')]
+    ds_rh = ds_multi_list[multi_level_name_list.index('rhum')]
+
     for iHour in fcHour_list:
         print(iHour)
         series_map = dict()
@@ -67,12 +79,35 @@ def convert_nc2csv():
             series_map[name_key] = da.values
         # TODO: temp. and rhum in 850hPa and 925hPa 计算逆温情况
         for index in range(len(multi_level_name_list)):
-            name_key = single_level_name_list[index]
-            i_ds = ds_single_list[index]
+            name_key = multi_level_name_list[index]
+            i_ds = ds_multi_list[index]
             i_varname = f'{name_key}{iHour:0>3d}'
             da = i_ds[i_varname]
-            # TODO：选择指定层次
+            for iLevel in levels_selected:
+                iVarname = f'{name_key}{int(iLevel)}'
+                series_map[iVarname] = da.sel(level = iLevel).values
+                if(name_key == 'temp'): series_map[iVarname] = series_map[iVarname] - 273.15
+
             # series_map[name_key] = da.values
+        # TODO: 计算相当位温
+        
+        da_t  = ds_t[f'temp{iHour:0>3d}']
+        da_rh = ds_rh[f'rhum{iHour:0>3d}']
+        for iLevel in levels_selected:
+            iVarname = f'theta_e{int(iLevel)}'
+            rhum = np.clip(da_rh.sel(level = iLevel), 0, 100)*units.percent
+            temp = da_t.sel(level = iLevel)*units.kelvin
+            td = mpcalc.dewpoint_from_relative_humidity(temp, rhum)
+            level_list = np.full_like(temp,iLevel)
+            theta_e = mpcalc.equivalent_potential_temperature(level_list*units.hPa, temp, td)
+            # theta_e = theta_e.to(units.degC)
+            series_map[iVarname] = theta_e.values - 273.15
+
+            iVarname = f'theta{int(iLevel)}'
+            theta = mpcalc.potential_temperature(level_list*units.hPa, temp)
+            series_map[iVarname] = theta.values - 273.15
+            
+
 
         df = pd.DataFrame(series_map)
         df['actual_time'] = init_time + pd.Timedelta(iHour,unit='h')
@@ -93,6 +128,7 @@ def convert_nc2csv():
         df['station_rain1'] = get_station_data_by_time(df['actual_time'],'V13019')
         df['fc_hour'] = iHour
         df.dropna(subset=['v100','v10m','u100','u10m','t2mm','t2md','sstk','station_vis'],inplace=True)
+        df.dropna(subset=multi_level_columns,inplace=True)
         df['station_vis_cat'] = 3
         df.loc[df['station_vis']<=1000,('station_vis_cat')] = 0
         df.loc[(df['station_vis']>1000) & (df['station_vis']<=10000),'station_vis_cat'] = 1
