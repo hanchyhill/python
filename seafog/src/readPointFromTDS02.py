@@ -16,11 +16,13 @@ fcHr = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36,
 fixLoc = [110.25, 20.125]
 fixLocUpper = [110.25, 20.25]
 elemName = 't2mm'
-eleList = ['sktk']#['mn2t','mx2t']#['v10m','u10m','u100','v100'] # 'visi', 'sstk', 't2mm', 't2md',
-upperEleList = ['uwnd','vwnd'] # 'temp','rhum', 'temp',
+eleList = ['v10m','u10m','u100','v100' , 'visi', 'sstk', 't2mm', 't2md','sktk']#
+upperEleList = ['temp','rhum','uwnd','vwnd', ] # 
 modelList = ['ecmwf_fine_his', 'ecmwfthin']
-initTime = arrow.get(2018, 10, 1)
-endTime = arrow.get(2022, 5, 1)
+initTime = arrow.get(2015, 8, 1)
+endTime = arrow.get(2018, 9, 1)
+# initTime = arrow.get(2018, 10, 1)
+# endTime = arrow.get(2022, 5, 1)
 realTimeEndTime = arrow.get(2021,3,1)
 
 def readFixPointData(model='ecmwf_fine_his', year=2018, month=10, elem='visi', fixPoint=[110.25, 20.125]):
@@ -53,56 +55,42 @@ def readFixPointDataFromPressue(model='ecmwf_fine_his', year=2018, month=10, ele
 
 def concatData(elemName, lonlat, stationID):
     print(elemName,stationID)
+    netcdf_file_name = "{}.{}-{}_lon{}_lat{}.{}.nc".format(stationID, initTime.format('YYYYMM'), endTime.format('YYYYMM'), lonlat[0], lonlat[1], elemName)
+    fullPath = os.path.join(current_file_dir, './{}'.format(netcdf_file_name))
+    if os.path.exists(fullPath):
+        print(f'文件已存在{netcdf_file_name}')
+        return
+    
     currenModel = 'ecmwf_fine_his'
     arrow.Arrow.range('month', initTime, endTime)
-    baseDs = readFixPointData(currenModel, initTime.year, initTime.month, elemName, lonlat)
-    for iTime in arrow.Arrow.range('month', initTime.shift(months=+1), endTime):  # 迭代日期, 合并数据
+    baseDs = None
+
+    for iTime in arrow.Arrow.range('month', initTime, endTime):  # 迭代日期, 合并数据
         try:
             iDs = readFixPointData(currenModel, iTime.year, iTime.month, elemName, lonlat)
-            print(f'合并中{iTime}, {elemName}, {stationID}')
-            baseDs = xr.concat([baseDs, iDs], dim="time")
+            if baseDs is None:
+                print(f'初始化dataset {iTime}, {elemName}, {stationID}')
+                baseDs = iDs
+            else:
+                print(f'合并中{iTime}, {elemName}, {stationID}')
+                baseDs = xr.concat([baseDs, iDs], dim="time")
         except Exception as e:
             print(f'更换数据源{iTime}, {elemName}, {stationID}')
             try:
                 iDs = readFixPointData('ecmwfthin', iTime.year, iTime.month, elemName, lonlat)
-                print(f'合并中{iTime}, {elemName}, {stationID}')
-                baseDs = xr.concat([baseDs, iDs], dim="time")
+                if baseDs is None:
+                    print(f'初始化dataset {iTime}, {elemName}, {stationID}')
+                    baseDs = iDs
+                else:
+                    print(f'合并中{iTime}, {elemName}, {stationID}')
+                    baseDs = xr.concat([baseDs, iDs], dim="time")
             except Exception as e:
                 print(f'所有数据源无数据{elemName},站号{stationID}, {iTime.format()}, 跳过此循环')
                 continue
-
-    # currenModel = 'ecmwfthin'
-    # for iTime in arrow.Arrow.range('month', endTime.shift(months=+1), realTimeEndTime):  # 迭代日期, 合并数据
-    #     iDs = readFixPointData(currenModel, iTime.year, iTime.month, elemName, fixLoc)
-    #     print('合并中{}'.format(iTime))
-    #     baseDs = xr.concat([baseDs, iDs], dim="time")
-    
-    netcdf_file_name = "{}.{}-{}_lon{}_lat{}.{}.nc".format(stationID, initTime.format('YYYYMM'), endTime.format('YYYYMM'), lonlat[0], lonlat[1], elemName)
-    fullPath = os.path.join(current_file_dir, './{}'.format(netcdf_file_name))
+ 
     baseDs.to_netcdf(fullPath)
     baseDs.close()
 
-def concatPreData(elemName):
-    print(elemName)
-    currenModel = 'ecmwf_fine_his'
-    arrow.Arrow.range('month', initTime, endTime)
-    baseDs = readFixPointDataFromPressue(currenModel, initTime.year, initTime.month, elemName, fixLocUpper)
-    for iTime in arrow.Arrow.range('month', initTime.shift(months=+1), endTime):  # 迭代日期, 合并数据
-        print(iTime)
-        iDs = readFixPointData(currenModel, iTime.year, iTime.month, elemName, fixLocUpper)
-        print('合并中{}'.format(iTime))
-        baseDs = xr.concat([baseDs, iDs], dim="time")
-
-    # currenModel = 'ecmwfthin'
-    # for iTime in arrow.Arrow.range('month', endTime.shift(months=+1), realTimeEndTime):  # 迭代日期, 合并数据
-    #     print(iTime)
-    #     iDs = readFixPointDataFromPressue(currenModel, iTime.year, iTime.month, elemName, fixLocUpper)
-    #     print('合并中{}'.format(iTime))
-    #     baseDs = xr.concat([baseDs, iDs], dim="time")
-    
-    netcdf_file_name = "{}-{}_lon{}_lat{}.{}.nc".format(initTime.format('YYYYMM'), realTimeEndTime.format('YYYYMM'), fixLocUpper[0], fixLocUpper[1], elemName)
-    fullPath = os.path.join(current_file_dir, '../data/{}'.format(netcdf_file_name))
-    baseDs.to_netcdf(fullPath)
 
 def fix2Grid(number, interval = 0.125):
     fixNum = round(number / interval) * interval
@@ -153,5 +141,11 @@ class DownloadWorker(Thread):
       concatData(elemName, lonlat,ID)
       self.queue.task_done()
 
+def seafogMain():
+    # for elemName in eleList:
+    #     concatData(elemName,[110.25,20.125],'59754')
+    for elemName in upperEleList:
+        concatData(elemName,[110.25,20.25],'59754')
 # main()
-concatData('tppm',[110.25,20.125],'59754')
+
+seafogMain()

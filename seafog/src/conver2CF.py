@@ -43,6 +43,16 @@ config = {
         'long_name': 'air temperature in 2 metre',
         'short_name': 'T2m',
     },
+    'sktk':{
+        'name':'sktk',
+        'missing_value': -999.9,
+        # '_FillValue':  -999.9,
+        'valid_min': 0.0,
+        'standard_name': 'surface_temperature',
+        'units': 'K',
+        'long_name': 'surface temperature',
+        'short_name': 'sktk',
+    },
     'mn2t':{
         'name':'mn2t',
         'missing_value': -999.9,
@@ -238,7 +248,16 @@ def conver_nc_CF(
         print(f'转换文件{file_name}')
         dataset = openDataSet(dirPath, file_name, name, False)
         dataset.to_netcdf(file_name)
+
+
 # conver_nc_CF()
 # conver_nc_CF(['v100','v10m','u100','u10m'],['vwnd','uwnd'],'201810-202103_lon110.25_lat20.125.','201810-202103_lon110.25_lat20.25.')
-concat_multi_ds()
-concat_multi_ds(['vwnd','uwnd','temp','rhum'], '201810-202103_lon110.25_lat20.25.','202104-202205_lon110.25_lat20.25.','201810-202205_lon110.25_lat20.25.','H:/github/python/seafog/data/CFdata/')
+
+
+# concat_multi_ds()
+# concat_multi_ds(['vwnd','uwnd','temp','rhum'], '201810-202103_lon110.25_lat20.25.','202104-202205_lon110.25_lat20.25.','201810-202205_lon110.25_lat20.25.','H:/github/python/seafog/data/CFdata/')
+
+# conver_nc_CF(['v10m','u10m','u100','v100' , 'visi', 'sstk', 't2mm', 't2md','sktk'],[],'59754.201508-201809_lon110.25_lat20.125.','59754.201508-201809_lon110.25_lat20.25.')
+# concat_multi_ds(['v10m','u10m','u100','v100' , 'visi', 'sstk', 't2mm', 't2md','sktk'], '59754.201508-201809_lon110.25_lat20.125.','201810-202205_lon110.25_lat20.125.','201508-202205_lon110.25_lat20.125.','H:/github/python/seafog/data/CFdata/')
+# conver_nc_CF(['sktk'],[],'59754.201810-202205_lon110.25_lat20.125.','59754.201508-201809_lon110.25_lat20.25.')
+concat_multi_ds(['sktk'], '59754.201508-201809_lon110.25_lat20.125.','59754.201810-202205_lon110.25_lat20.125.','201508-202205_lon110.25_lat20.125.','H:/github/python/seafog/data/CFdata/')
