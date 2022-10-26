@@ -31,14 +31,14 @@ for multi_name_key in multi_level_name_list:
     for iLevel in levels_selected:
         multi_level_columns.append(f'{multi_name_key}{int(iLevel)}')
 
-dir_path = 'H:/github/python/seafog/data/CFdata/concat/'
+dir_path = 'H:/github/python/seafog/data/CFdata/concat/201508-202205/'
 
 file_59754 = 'H:/github/python/seafog/data/station/59754.20130101-2022093023.csv'
 df_59754 = pd.read_csv(file_59754,sep=',',na_values=[9999])
 df_59754.index = pd.to_datetime(df_59754["DDATETIME"])
 # print(df_59754.dtypes)
 
-h5_store = pd.HDFStore('H:/github/python/seafog/data/collection/fullhour/fullhour.ec201810-202205.hdf', mode='w')
+h5_store = pd.HDFStore('H:/github/python/seafog/data/collection/fullhour/fullhour.ec201508-202205.hdf', mode='w')
 
 def get_time_list(ds):
     da_time = ds['time']
@@ -48,20 +48,20 @@ def get_elems():
     pass
 
 def convert_nc2csv():
-    file_name = 'fullhour.201810-202205_lon110.25_lat20.125.sstk.nc'
+    file_name = 'fullhour.201508-202205_lon110.25_lat20.125.sstk.nc'
     ds_time = xr.open_dataset(f'{dir_path}{file_name}')
     init_time = pd.Series(ds_time['time'])
     ds_single_list = []
     
     for name in single_level_name_list:
-        file_name = f'fullhour.201810-202205_lon110.25_lat20.125.{name}.nc'
+        file_name = f'fullhour.201508-202205_lon110.25_lat20.125.{name}.nc'
         ids = xr.open_dataset(f'{dir_path}{file_name}')
         ds_single_list.append(ids)
 
     ds_multi_list = []
     
     for name in multi_level_name_list:
-        file_name = f'fullhour.201810-202205_lon110.25_lat20.25.{name}.nc'
+        file_name = f'fullhour.201508-202205_lon110.25_lat20.25.{name}.nc'
         ids = xr.open_dataset(f'{dir_path}{file_name}')
         ds_multi_list.append(ids)
 
@@ -135,7 +135,7 @@ def convert_nc2csv():
         df.loc[df['station_vis']>10000,'station_vis_cat'] = 2
         df_rain_remove = df[df['station_rain1']<1]
         df_rain_remove.to_hdf(h5_store, key=f'df_{iHour:0>3d}', mode='a')
-        df_rain_remove.to_csv(f'ec201810-202205_xuwen_{iHour:0>3d}.csv')
+        df_rain_remove.to_csv(f'ec201508-202205_xuwen_{iHour:0>3d}.csv')
     h5_store.close()
 
 def get_station_data_by_time(time_list, key):
