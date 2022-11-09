@@ -39,3 +39,16 @@
 0-8 ℃
 0 1 2 3 4 5 6 7 8
 0, 22.2, 41.6, 58.3, 72.2, 83.3, 91.6, 97.2, 100
+
+## 站点 
+
+* 59754 徐闻
+* 59757 琼山
+* 59758 海口
+
+# 构建样本流程
+
+1. conver2CF.py
+2. fill_hour_netcdf.py
+3. merge.netcdf_multi.py
+4. build.dataset.py / fullhour_sample_dataset.ipynb

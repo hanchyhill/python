@@ -1,7 +1,7 @@
 import xarray as xr
 import numpy as np
 import os
-
+import glob
 config = {
     'sstk':{
         'name':'sstk',
@@ -148,6 +148,9 @@ config = {
         'short_name': 'Vwnd',
     },
 }
+single_level_name_list = ['visi','v100','v10m','u100','u10m','t2mm','t2md','sstk','sktk','mx2t','mn2t']
+multi_level_name_list = ['vwnd','uwnd','temp','rhum']
+
 
 file0 = '201810-202101_lon110.25_lat20.125.sstk.nc'
 file1 = '202102-202103_lon110.25_lat20.125.sstk.nc'
@@ -180,7 +183,7 @@ def convertDataArray(dataArray, daConfig, dropLevel: True):
 
 
 def openDataSet(dirPath = 'H:/github/python/seafog/data/', file = '201810-202101_lon110.25_lat20.125.sstk.nc',varNameSuffix='sstk',dropLevel=False):
-    ds = xr.open_dataset(dirPath + file)
+    ds = xr.open_dataset(os.path.join(dirPath,file))
     iConfig = config[varNameSuffix]
     nameList = createVarNameList(iConfig['name'])
     for varName in nameList:
@@ -249,6 +252,29 @@ def conver_nc_CF(
         dataset = openDataSet(dirPath, file_name, name, False)
         dataset.to_netcdf(file_name)
 
+def scan_convet_CF(inputDirpath):
+    reg = inputDirpath+'*.nc'
+    path_list = glob.glob(reg)
+    for iPath in path_list:
+        (filepath,filename) = os.path.split(iPath)
+        print(filename)
+        output_path = os.path.join(inputDirpath, './CFdata',filename[6:])
+        if os.path.exists(output_path):
+            print('文件已存在'+output_path)
+            continue # skip
+        
+        name = iPath[-7:-3]
+        if name in single_level_name_list:
+            dataset = openDataSet(filepath, filename, name, True)
+        elif name in multi_level_name_list:
+            dataset = openDataSet(filepath, filename, name, False)
+        else:
+            raise ValueError("未检索到文件名"+name)
+        
+        dataset.to_netcdf(output_path)
+        dataset.close()
+
+
 
 # conver_nc_CF()
 # conver_nc_CF(['v100','v10m','u100','u10m'],['vwnd','uwnd'],'201810-202103_lon110.25_lat20.125.','201810-202103_lon110.25_lat20.25.')
@@ -262,4 +288,5 @@ def conver_nc_CF(
 # conver_nc_CF(['sktk'],[],'59754.201810-202205_lon110.25_lat20.125.','59754.201508-201809_lon110.25_lat20.25.')
 # concat_multi_ds(['sktk'], '59754.201508-201809_lon110.25_lat20.125.','59754.201810-202205_lon110.25_lat20.125.','201508-202205_lon110.25_lat20.125.','H:/github/python/seafog/data/CFdata/')
 # conver_nc_CF([],['vwnd','uwnd','temp','rhum'],'59754.201810-202205_lon110.25_lat20.25.','59754.201508-201809_lon110.25_lat20.25.')
-concat_multi_ds(['vwnd','uwnd','temp','rhum'], '59754.201508-201809_lon110.25_lat20.25.','201810-202205_lon110.25_lat20.25.','201508-202205_lon110.25_lat20.25.','H:/github/python/seafog/data/CFdata/')
+# concat_multi_ds(['vwnd','uwnd','temp','rhum'], '59754.201508-201809_lon110.25_lat20.25.','201810-202205_lon110.25_lat20.25.','201508-202205_lon110.25_lat20.25.','H:/github/python/seafog/data/CFdata/')
+scan_convet_CF('F:/github/pythonScript/seafog/data/netcdf/')
