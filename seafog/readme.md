@@ -48,7 +48,17 @@
 
 # 构建样本流程
 
-1. conver2CF.py
-2. fill_hour_netcdf.py
-3. merge.netcdf_multi.py
-4. build.dataset.py / fullhour_sample_dataset.ipynb
+1. conver2CF.py: 转换为CF兼容格式和合并多个时段的netcdf
+2. fill_hour_netcdf.py: 填充为逐小时预报数据
+3. merge_csv.ipynb: 合并station数据
+4. merge.netcdf_multi.py: 合并netcdf数据和站点数据到HDF文件中
+5. build.dataset.py / fullhour_sample_dataset.ipynb: 从hdf中创建数据集
+
+## TODO
+
+1. 去除异常能见度值, 雾时相对湿度小于90%个例
+2. wide-deep 模型
+3. 按照天去评分
+4. fit_transform如何转换
+5. 读取TDS上的数据实时预报
+6. 统计过去24小时最低能见度

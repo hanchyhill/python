@@ -32,7 +32,7 @@ latlon_pair_surface = [('110.0', '20.0'),
 latlon_pair_pressure = [('110.0', '20.0'),('110.25', '20.0'),('110.5', '20.0'),
                          ('110.0', '20.25'),('110.25', '20.25'),('110.5', '20.25')]
 # station_file_list = ['59754.20200101-20221031.csv','59757.20200101-20221031.csv', '59758.20200101-20221031.csv']
-station_file_list = ['all_stations.csv']
+station_file_list = ['all_stations_v2.csv']
 if os.environ['COMPUTERNAME'] == 'DESKTOP-EQAO3M5':
   computer_flag = 'home'
 else:
@@ -178,7 +178,7 @@ def get_station_data_by_time(time_list, key, df_station):
     for index in range(len(time_list)):
         iTime = time_list[index]
         if iTime in df_station.index:
-            da[index] = df_station.loc[iTime][key]
+            da[index] = df_station.loc[iTime,key]
     return da
 
 def scan_files():
@@ -225,7 +225,7 @@ def merge_files(selected_surface_file_list, selected_pressure_file_list, selecte
     surface_lat = selected_surface_file_list[0]['lat']
     pressure_lon = selected_pressure_file_list[0]['lon']
     pressure_lat = selected_pressure_file_list[0]['lat']
-    h5_filename = os.path.normpath(os.path.join(input_path, f'./hdf/full.suf{surface_lon}_{surface_lat}_pre{pressure_lon}_{pressure_lat}_allstation.hdf'))
+    h5_filename = os.path.normpath(os.path.join(input_path, f'./hdf/full.suf{surface_lon}_{surface_lat}_pre{pressure_lon}_{pressure_lat}_allstation_v2.hdf'))
     if os.path.exists(h5_filename):
         print(f'已存在{h5_filename}')
         return
