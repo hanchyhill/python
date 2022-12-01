@@ -1,177 +1,48 @@
 import xarray as xr
 import numpy as np
 import libs.drawMap as drawTools
+import libs.utils as util
 import os
 import arrow
 import json
 import time
 import pandas as pd
+
+import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
-import datetime
 
 timeStrList = ['000', '003', '006', '009', '012', '015', '018', '021', '024', '027', '030', '033', '036', '039', '042', '045', '048', '051', '054', '057', '060', '063', '066', '069', '072', '078', '084', '090',
                '096', '102', '108', '114', '120', '126', '132', '138', '144', '150', '156', '162', '168', '174', '180', '186', '192', '198', '204', '210', '216', '222', '228', '234', '240', ]
 fcHour_list = list(range(0, 72+1, 3)) + list(range(78, 240+1, 6))
 
-config = {
-    'sstk':{
-        'name':'sstk',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'sea_surface_skin_temperature',
-        'units': 'K',
-        'long_name': 'sea surface temperature',
-        'short_name': 'SST',
-    },
-    'visi':{
-        'name':'visi',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'visibility_in_air',
-        'units': 'm',
-        'long_name': 'visibility',
-        'short_name': 'visibility',
-    },
-    't2md':{
-        'name':'t2md',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'dew_point_temperature',
-        'units': 'K',
-        'long_name': 'dew point',
-        'short_name': 'Td',
-    },
-    't2mm':{
-        'name':'t2mm',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'air_temperature',
-        'units': 'K',
-        'long_name': 'air temperature in 2 metre',
-        'short_name': 'T2m',
-    },
-    'sktk':{
-        'name':'sktk',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'surface_temperature',
-        'units': 'K',
-        'long_name': 'surface temperature',
-        'short_name': 'sktk',
-    },
-    'mn2t':{
-        'name':'mn2t',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'air_temperature',
-        'units': 'K',
-        'long_name': 'air temperature minimum in 2 metre since 6 hr before',
-        'short_name': 'T2m',
-    },
-    'mx2t':{
-        'name':'mx2t',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'air_temperature',
-        'units': 'K',
-        'long_name': 'air temperature maxium in 2 metre since 6 hr before',
-        'short_name': 'T2m',
-    },
-    'rhum':{
-        'name':'rhum',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'relative_humidity',
-        'units': '0.01',
-        'long_name': 'relative_humidity',
-        'short_name': 'RH',
-    },
-    'temp':{
-        'name':'temp',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'valid_min': 0.0,
-        'standard_name': 'air_temperature',
-        'units': 'K',
-        'long_name': 'air temperature',
-        'short_name': 'Temp',
-    },
-    'uwnd':{
-        'name':'uwnd',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'standard_name': 'eastward_wind',
-        'units': 'm/s',
-        'long_name': 'u wind',
-        'short_name': 'Uwnd',
-    },
-    'vwnd':{
-        'name':'vwnd',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'standard_name': 'northward_wind',
-        'units': 'm/s',
-        'long_name': 'v wind',
-        'short_name': 'Vwnd',
-    },
-    'u10m':{
-        'name':'u10m',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'standard_name': 'eastward_wind',
-        'units': 'm/s',
-        'long_name': 'u wind',
-        'short_name': 'Uwnd',
-    },
-    'v10m':{
-        'name':'v10m',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'standard_name': 'northward_wind',
-        'units': 'm/s',
-        'long_name': 'v wind',
-        'short_name': 'Vwnd',
-    },
-    'u100':{
-        'name':'u100',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'standard_name': 'eastward_wind',
-        'units': 'm/s',
-        'long_name': 'u wind',
-        'short_name': 'Uwnd',
-    },
-    'v100':{
-        'name':'v100',
-        'missing_value': -999.9,
-        # '_FillValue':  -999.9,
-        'standard_name': 'northward_wind',
-        'units': 'm/s',
-        'long_name': 'v wind',
-        'short_name': 'Vwnd',
-    },
-}
+config = util.nwp_var_config
 
 current_dir = os.path.dirname(__file__)
-if(os.name == 'nt'):
-    imgBaseDir = 'demo/'
-    dataBaseDir = 'data/'
+if os.name == 'nt':
+    if os.environ['COMPUTERNAME'] == 'DESKTOP-EQAO3M5':
+      computer_flag = 'home'
+    elif  os.environ['COMPUTERNAME'] == 'H1809-P014':
+      computer_flag = 'office'
+    else:
+      computer_flag = 'office2'
 else:
-    imgBaseDir = '../data/img/seafog/'
-    dataBaseDir = '../data/img/seafog/'
+    computer_flag = 'server'
 
+if computer_flag == 'home':
+    root_dir = "F:/github/pythonScript/seafog/"
+    imgBaseDir = 'F:/github/python/seafog/img/'
+    dataBaseDir = 'F:/github/python/seafog/img/online/'
+elif  computer_flag == 'office':
+    root_dir = "H:/github/python/seafog/"
+    imgBaseDir = 'H:/github/python/seafog/img/'
+    dataBaseDir = 'H:/github/python/seafog/img/online/'
+else:
+    root_dir = "/var/www/html/seafog-DL/"
+    imgBaseDir = '/var/www/html/data/img/seafog_DL/'
+    dataBaseDir = '/var/www/html/data/store/seafog_DL/'
 
-
-def loadLog(time, type='map'):
+def loadLog(baseDir, time, type='map'):
     if(type=='map'):
         fileName = f'log_{time.format("YYYYMMDDHH")}.json'
     elif(type=='point'):
@@ -181,7 +52,7 @@ def loadLog(time, type='map'):
         raise '请设置正确的日志type: ' + type
     
     logDir = os.path.join(
-        current_dir, f'../{imgBaseDir}{time.format("YYYY/MM/DDHH/")}')
+        baseDir, f'./{time.format("YYYY/MM/DDHH/")}')
     logPath = os.path.join(logDir, fileName)
     logPath = os.path.normpath(logPath)
     isExists = os.path.exists(logPath)
@@ -212,40 +83,36 @@ def loadLog(time, type='map'):
         }
         return info
 
-def findLogDataBytimeStep(info, timeStep):
-    response = False
-    for item in info:
-        if(item['timeStep'] == timeStep):
-            response = item
-            break
-    return response
+def saveLog(baseDir, ctx, time, type='map'):
+    '''
+    写入日志
+    params:baseDir:基部路径
+    params:ctx:需要写入的内容
+    params:time:时间变量
+    params:type:enum(map,point),类型
+    '''
+    logDir = os.path.join(
+        baseDir, f'./{time.format("YYYY/MM/DDHH/")}')
+    logDir = os.path.normpath(logDir)
+    if(type=='map'):
+        fileName = f'log_{time.format("YYYYMMDDHH")}.json'
+    elif(type=='point'):
+        fileName = f'log_timeSeries_{time.format("YYYYMMDDHH")}.json'
+    else:
+        print('请设置正确的日志type: ' + type)
+        raise '请设置正确的日志type: ' + type
+    try:
+        drawTools.createDir(logDir)
+        logPath = os.path.join(logDir, fileName)
+        with open(logPath, 'w') as f_log:
+            f_log.write(ctx)
+    except Exception as e:
+        raise e
 
-def findLogDataByStationId(info, station_id):
-    '''
-    根据station ID 查找日志记录
-    '''
-    response = False
-    for item in info:
-        if(item['stationId'] == station_id):
-            response = item
-            break
-    return response
+findLogDataBytimeStep = util.findLogDataBytimeStep
+findLogDataByStationId = util.findLogDataByStationId
 
-def convertDataArray(dataArray, daConfig, dropLevel: True):
-    '''
-    转换格式
-    @dropLevel: 是否删除最后一个维度, 地面数据会多出一个level维度
-    '''
-    if(dropLevel):
-        dataArray = dataArray[:,0]
-    if('valid_min' in daConfig):
-        dataArray = xr.where(dataArray>daConfig['valid_min'], dataArray,np.nan)
-    # dataArray.fillna(daConfig['missing_value'])
-    
-    dataArray = xr.where(dataArray<=daConfig['missing_value'], np.nan, dataArray)
-    dataArray.attrs = daConfig
-    del dataArray.attrs['missing_value']
-    return dataArray
+convertDataArray = util.convertDataArray
 
 def calLatestBaseTime() -> str:
     '''
@@ -264,73 +131,9 @@ def calLatestBaseTime() -> str:
         baseTime = f"{utcnow.shift(days = -1).format('YYYYMMDD')}12"
     return baseTime
 
-def interpolate(dataArray,  resolution:float = 0.125, area: list = [105, 125, 15, 28], ):
-    lons = np.arange(area[0], area[1]+resolution, resolution)
-    lats = np.arange(area[1], area[2]+resolution, resolution) 
-    newDa = dataArray.interp(lon=lons, lat=lats, method="linear")
-    return newDa
+readFromTDS = util.readFromTDS_seafog
 
-def readFromTDS(initTime: str = '2022031700', modelId: str = 'ecmwfthin', area: list = [105, 125, 15, 28]) -> dict:
-    '''
-    从TDS接口读取指定起报时间数据, 返回dataset
-    :params initTime: 起报时间世界时YYYYMMDDHH
-    :params modelId: 模式名
-    :params area: 筛选区域[西, 东, 南, 北]
-    :return dataset字典
-    '''
-    # 需要读取的要素t2mm, t2md, sstk, v100, v10m, u100, u10m, (rhum, temp) => (theta925,theta1000)
-    # TODO: 高空的数据插值到地面的分辨率上
-    year = initTime[0:4]
-    month = initTime[4:6]
-    day = initTime[6:8]
-    hour = initTime[8:10]
-    selectedTime = '{0}-{1}-{2} {3}:00:00'.format(year, month, day, hour)
-    baseUrl = 'http://10.148.8.71:7080/thredds/dodsC/{0}/'.format(modelId)
-    url_td = baseUrl + f'{year}{month}/t2md.nc'
-    url_t2m = baseUrl + f'{year}{month}/t2mm.nc'
-    url_sst = baseUrl + f'{year}{month}/sstk.nc'
-    url_u100 = baseUrl + f'{year}{month}/u100.nc'
-    url_v100 = baseUrl + f'{year}{month}/v100.nc'
-    url_u10m = baseUrl + f'{year}{month}/u10m.nc'
-    url_v10m = baseUrl + f'{year}{month}/v10m.nc'
-    url_rhum = baseUrl + f'{year}{month}/rhum.nc'
-    url_temp = baseUrl + f'{year}{month}/temp.nc'
-    try:
-        dataSet_td = xr.open_dataset(url_td)
-        dataSet_t2m = xr.open_dataset(url_t2m)
-        dataSet_sst = xr.open_dataset(url_sst)
-        dataSet_u100 = xr.open_dataset(url_u100)
-        dataSet_v100 = xr.open_dataset(url_v100)
-        dataSet_u10m = xr.open_dataset(url_u10m)
-        dataSet_v10m = xr.open_dataset(url_v10m)
-        dataSet_rhum = xr.open_dataset(url_rhum)
-        dataSet_temp = xr.open_dataset(url_temp)
-    except Exception as e:
-        print('无法获取数据源')
-        raise e
-    ds_td = dataSet_td.sel(time=selectedTime, level=0.0, lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    ds_t2m = dataSet_t2m.sel(time=selectedTime, level=0.0, lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    ds_sst = dataSet_sst.sel(time=selectedTime, level=0.0, lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    ds_u100 = dataSet_u100.sel(time=selectedTime, level=0.0, lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    ds_v100 = dataSet_v100.sel(time=selectedTime, level=0.0, lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    ds_u10m = dataSet_u10m.sel(time=selectedTime, level=0.0, lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    ds_v10m = dataSet_v10m.sel(time=selectedTime, level=0.0, lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    ds_rhum = dataSet_rhum.sel(time=selectedTime, level=[1000.0, 925.0], lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    ds_temp = dataSet_temp.sel(time=selectedTime, level=[1000.0, 925.0], lat=slice(
-        area[2], area[3]), lon=slice(area[0], area[1]))
-    
-    return {'td': ds_td, 't2m': ds_t2m, 'sst': ds_sst, 'u100':ds_u100, 'v100':ds_v100, 'u10m':ds_u10m,
-            'v10m':ds_v10m, 'rhum':ds_rhum, 'temp':ds_temp}
-
-def main(time):
+def main(time=None):
     if(not time):
         initTime = calLatestBaseTime()  # '2022031500'
     else:
@@ -344,7 +147,7 @@ def main(time):
     ds_t2m = selected_ds['t2m']
     ds_sst = selected_ds['sst']
 
-    ds_u100 = selected_ds['u100'] 
+    ds_u100 = selected_ds['u100']
     ds_v100 = selected_ds['v100']
     ds_u10m = selected_ds['u10m']
     ds_v10m = selected_ds['v10m']
@@ -353,12 +156,13 @@ def main(time):
     infoList = []
     isLogExists = False
     ### 读取日志文件 ###
-    logInfo = loadLog(arrow_initTime)
+    logInfo = loadLog(imgBaseDir, arrow_initTime)
     if(logInfo['success']):
         logInfo = json.loads(logInfo['data'])
         isLogExists = True
 
-    for iTimeStep in timeStrList:
+    for iHour in fcHour_list:
+        iTimeStep = f'{iHour:0>3d}'
         # 读取JSON中的数据, 有成功匹配的值则跳过
         if(isLogExists):  # 如果日志存在并且上次已经成功则跳过此项
             log_item = findLogDataBytimeStep(logInfo, iTimeStep)
@@ -402,11 +206,11 @@ def main(time):
             infoList.append(outputInfo)
             continue
         else:
-            td = xr.where(td > 50, td, -999.9)
+            td = xr.where(td > 50, td, np.nan)
             td = convertDataArray(td, config['t2md'])
-            t2m = xr.where(t2m > 50, t2m, -999.9)
+            t2m = xr.where(t2m > 50, t2m, np.nan)
             t2m = convertDataArray(t2m, config['t2mm'])
-            sst = xr.where(sst > 50, sst, -999.9)
+            sst = xr.where(sst > 273.161, sst, np.nan)
             sst = convertDataArray(sst, config['sstk'])
             u100 = convertDataArray(u100, config['u100'])
             v100 = convertDataArray(v100, config['v100'])
@@ -415,38 +219,42 @@ def main(time):
             rhum = convertDataArray(rhum, config['rhum'])
             temp = convertDataArray(temp, config['temp'])
             # TODO
-            t2m_td = t2m - td  # 温度露点差
-            td_sst = td - sst  # 露点海温差
-            t2m_td = t2m - td  # 温度露点差
-            td_sst = td - sst  # 露点海温差
-            fog = xr.where(np.logical_and(
-                t2m_td >= 0.8, td_sst > 0), -0.5, td_sst)
+            # t2m_td = t2m - td  # 温度露点差
+            # td_sst = td - sst  # 露点海温差
+            # t2m_td = t2m - td  # 温度露点差
+            # td_sst = td - sst  # 露点海温差
+            dalist = [td, t2m, sst, u100, v100, u10m, v10m, rhum, temp]
+            fog = drawTools.predictFog(dalist, iHour)
             fog = convertDataArray(fog, config['fog'])
             ds = xr.Dataset()
             ds['fog'] = fog
-            ds['td_sst'] = td_sst
-            ds['t2m_td'] = t2m_td
-            ds['sst'] = sst
-            ds['td'] = td
-            ds['t2m'] = t2m
+            ds['u100'] = u100
+            ds['v100'] = v100
+            ds['sstk'] = sst
+            ds['t2md'] = td
+            ds['t2mm'] = t2m
+            ds['rhum'] = rhum
+            ds['temp'] = temp
+            ds['u10m'] = u10m
+            ds['v10m'] = v10m
 
             ####### 储存文件 #######
-            fileDir = os.path.join(current_dir, f'../{dataBaseDir}{arrow_initTime.format("YYYY/MM/DDHH/")}')
-            fileDir = os.path.normpath(fileDir)
-            try:
-                drawTools.createDir(fileDir)
-                filePath = os.path.join(
-                    fileDir, f'fog_{initTime}_{iTimeStep}.nc')
-                filePath = os.path.normpath(filePath)
-                ds.to_netcdf(filePath)
-                print('储存netCDF: '+filePath)
-            except Exception as e:
-                print(e)
+            # fileDir = os.path.join(dataBaseDir, f'./{arrow_initTime.format("YYYY/MM/DDHH/")}')
+            # fileDir = os.path.normpath(fileDir)
+            # try:
+            #     drawTools.createDir(fileDir)
+            #     filePath = os.path.join(
+            #         fileDir, f'fog_{initTime}_{iTimeStep}.nc')
+            #     filePath = os.path.normpath(filePath)
+            #     ds.to_netcdf(filePath)
+            #     print('储存netCDF: '+filePath)
+            # except Exception as e:
+            #     print(e)
 
             #####################
             try:
-                imgPath = drawTools.drawFogMap(
-                    ds, initTime, iTimeStep, imgBaseDir)
+                imgPath = drawTools.draw_Fog_Contour(
+                    fog, initTime, iTimeStep, imgBaseDir)
                 outputInfo = {
                     'status': 'success',
                     'success': True,
@@ -465,3 +273,57 @@ def main(time):
                 }
                 infoList.append(outputInfo)
             ds.close()
+    
+    ds_td.close()
+    ds_t2m.close()
+    ds_sst.close()
+    ds_u100.close()
+    ds_v100.close()
+    ds_u10m.close()
+    ds_v10m.close()
+    ds_rhum.close()
+    ds_temp.close()
+    #############写入日志###########
+    logOutput = json.dumps(infoList, indent=2)
+    saveLog(imgBaseDir, logOutput, arrow_initTime, type='map')
+
+##########自定义任务##########
+def customTask():
+    dateList = pd.date_range(start='2022-11-01 00:00', end='2022-11-28 12:00',freq='12H')
+    for iDate in dateList:
+        initTime = arrow.get(iDate).format('YYYYMMDDHH')
+        main(initTime)
+
+# customTask()
+
+##########创建任务##########
+def testTime():
+    startTime = time.process_time()
+    main()
+    endTime = time.process_time()
+    print(f'总时间为{str((endTime-startTime)/60.0)}分钟')
+# demoTest()
+
+job_defaults = {
+    'coalesce': True,  # 合并执行misfire的任务, 减少执行次数
+    'max_instances': 1  # 只有一个任务进程, 上个任务未执行完毕将取消执行本次运行
+}
+
+
+def my_listener(event):
+    if event.exception:
+        print('任务出错了！！！！！！')
+    else:
+        print('任务照常运行...')
+
+
+scheduler = BlockingScheduler(job_defaults=job_defaults)  # 创建后台非阻塞任务
+scheduler.add_job(testTime, 'interval', minutes=12, id='draw_fog_map', next_run_time=datetime.datetime.now())
+scheduler.add_listener(my_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+
+try:
+    scheduler.start()
+except (KeyboardInterrupt, SystemExit):
+    pass
+
+print('正在执行海上能见度定时任务')

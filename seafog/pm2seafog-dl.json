@@ -1,0 +1,30 @@
+{
+  "name"        : "seafog-dl",  // 应用名称
+  "script"      : "./src/drawmap/main.py",  // 实际启动脚本
+  "cwd"         : "/var/www/html/seafog-DL/",  // 当前工作路径
+  "interpreter" : "/home/minhill/miniconda3/envs/seafog/bin/python",
+  "exec_mode": "fork",// 兼容python 多线程模式
+  "wait_ready": true, 
+  "autorestart": false, 
+  "max_restarts": 5,
+  "max_memory_restart":"999M",
+  "log_date_format"  : "YYYY-MM-DD HH:mm Z",
+  "watch": [  // 监控变化的目录，一旦变化，自动重启
+    "libs",
+    "."
+  ],
+  "ignore_watch" : [  // 从监控目录中排除
+    "demo", 
+    "china_basic_map",
+    "logs",
+    "shapefiles"
+  ],
+  "watch_options": {
+    "followSymlinks": false
+  },
+  "error_file" : "/var/www/html/seafog-DL/logs/app-err.log",  // 错误日志路径
+  "out_file"   : "/var/www/html/seafog-DL/logs/app-out.log",  // 普通日志路径
+  "env": {
+      "NODE_ENV": "production"  // 环境参数，当前指定为生产环境
+  }
+}

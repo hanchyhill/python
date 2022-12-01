@@ -1,6 +1,7 @@
 import xarray as xr
 import numpy as np
 import os
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 import arrow
 # import json
 # import time
@@ -44,18 +45,23 @@ for iSymbol in var_symbols:
     ds_list.append(i_dataset)
 
 
-if os.environ['COMPUTERNAME'] == 'DESKTOP-EQAO3M5':
-  computer_flag = 'home'
-elif  os.environ['COMPUTERNAME'] == 'H1809-P014':
-  computer_flag = 'office'
+if os.name == 'nt':
+    if os.environ['COMPUTERNAME'] == 'DESKTOP-EQAO3M5':
+      computer_flag = 'home'
+    elif  os.environ['COMPUTERNAME'] == 'H1809-P014':
+      computer_flag = 'office'
+    else:
+      computer_flag = 'office2'
 else:
-  computer_flag = 'office2'
+    computer_flag = 'server'
 
 
 if computer_flag == 'home':
-  root_dir = "F:/github/pythonScript/seafog/"
+    root_dir = "F:/github/pythonScript/seafog/"
+elif computer_flag == 'office':
+    root_dir = "H:/github/python/seafog/"
 else:
-  root_dir = "H:/github/python/seafog/"
+    root_dir = "/var/www/html/seafog-DL/"
 
 def setDataset(df, x_columns):
     '''
@@ -74,7 +80,7 @@ def setDataset(df, x_columns):
 
 model = tf.keras.models.load_model(os.path.normpath(os.path.join(root_dir, './data/model/model_singletest_fog_dataset_hdf66_fc120h_v2')))
 
-colordict_fog=['#6100BF','#8815D9','#AF30F2','#C340FF','#00014D','#0003BF','#0004FD','#2629FD','#2280F9','#6EB9F7','#59E144','#BBE7BB','#E6F5E6','#FFFEFF']
+colordict_fog=['#9C052A','#CC046B','#FF1A3C','#F50068','#00014D','#0003BF','#0004FD','#2629FD','#2280F9','#6EB9F7','#59E144','#BBE7BB','#E6F5E6','#FFFEFF']
 clrmap_fog = mcolors.ListedColormap(colordict_fog)
 bound_fog = [0, 0.1, 0.2, 0.3, 0.5, 0.8, 1.3, 2.1, 3.4, 5.5]
 bound_fog = [0.,50.,200.,500.,1_000.,2_000.,3_000.,4_000.,6_000.,8_000.,10_000.,15_000.,20_000.,25_000.,30_000]
@@ -298,31 +304,31 @@ def reverse_linear_vis(x):
 
 
 
-time_step = '024'
-area = [105, 125, 15, 28]
-da_list = []
-for iSymbol, i_ds in zip(var_symbols, ds_list):
-    i_dataArray = i_ds[f'{iSymbol}{time_step}']
-    print(iSymbol)
-    if iSymbol == 'rhum' or iSymbol == 'temp':
-        sud_dataArray = i_dataArray.sel(time=i_dataArray.time[0].values.item(), level=[1000.0, 925.0], lat=slice(area[2], area[3]), lon=slice(area[0], area[1]))
-    else:
-        sud_dataArray = i_dataArray.sel(time=i_dataArray.time[0].values.item(), level=0.0, lat=slice(area[2], area[3]), lon=slice(area[0], area[1]))
-    da_list.append(sud_dataArray)
+# time_step = '024'
+# area = [105, 125, 15, 28]
+# da_list = []
+# for iSymbol, i_ds in zip(var_symbols, ds_list):
+#     i_dataArray = i_ds[f'{iSymbol}{time_step}']
+#     print(iSymbol)
+#     if iSymbol == 'rhum' or iSymbol == 'temp':
+#         sud_dataArray = i_dataArray.sel(time=i_dataArray.time[0].values.item(), level=[1000.0, 925.0], lat=slice(area[2], area[3]), lon=slice(area[0], area[1]))
+#     else:
+#         sud_dataArray = i_dataArray.sel(time=i_dataArray.time[0].values.item(), level=0.0, lat=slice(area[2], area[3]), lon=slice(area[0], area[1]))
+#     da_list.append(sud_dataArray)
 
 
 
 
 
-def predictFog(da_list, leadtime=24)->xr.DataArray:
+def predictFog(da_list, leadtime)->xr.DataArray:
     '''
     预报能见度
     '''
     (t2md, t2mm,sstk,u100,v100,u10m,v10m,rhum,temp) = da_list
-    sstk = xr.where(sstk>273.16, sstk, np.nan)
+    # sstk = xr.where(sstk>273.16, sstk, np.nan)
 
     # 计算时间周期
-    iTime = pd.Timestamp(t2md.time.dt.date.values.item())  + pd.Timedelta(leadtime,unit='h')
+    iTime = pd.Timestamp(t2md.time.values.item())  + pd.Timedelta(leadtime,unit='h')
     year_sin = np.sin((iTime.dayofyear / 365.25) * 2 * np.pi)
     year_cos = np.cos((iTime.dayofyear / 365.25) * 2 * np.pi)
     day_sin = np.sin((iTime.hour / 24) * 2 * np.pi)
@@ -358,9 +364,9 @@ def predictFog(da_list, leadtime=24)->xr.DataArray:
     theta_e925 = theta_e_interp.sel(level=925.0)
 
     # 转换为摄氏度℃
-    t2mm = t2mm -273.16
-    t2md = t2md -273.16
-    sstk = sstk -273.16
+    t2mm = t2mm.metpy.convert_units('degC')
+    t2md = t2md.metpy.convert_units('degC')
+    sstk = sstk.metpy.convert_units('degC')
 
 
     # 组合各变量为TF model 的 因变量输入
@@ -440,11 +446,11 @@ def draw_Fog_Contour(dataArray, baseTime:str='2022031700', timeStep:str='000', i
         '%Y-%m-%d %H:%MZ').item(), 'YYYY-MM-DD HH:mmZ')
     initTime = utcTime.shift(hours=8)
     fcTime = initTime.shift(hours=int(timeStep))
-    fogMap.set_title(f'机器学习海上能见度定量预报 起报:{initTime.format("YYYY-MM-DD HH:00")}, 预报:{fcTime.format("DD日HH时")},(北京时)', fontsize=20)
+    fogMap.set_title(f'海上能见度定量预报 起报:{initTime.format("YYYY-MM-DD HH:00")}, 预报:{fcTime.format("DD日HH时")},(北京时)', fontsize=20)
 
     #########  保存图像  ###########
     
-    imgDir = os.path.join(root_dir, f'../../{imgBaseDir}{utcTime.format("YYYY/MM/DDHH/")}')
+    imgDir = os.path.join(imgBaseDir, f'./{utcTime.format("YYYY/MM/DDHH/")}')
     imgDir = os.path.normpath(imgDir)
     try:
         createDir(imgDir)
