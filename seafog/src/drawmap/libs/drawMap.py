@@ -93,6 +93,7 @@ x_columns = ['t_td', 'td_sst','t_sst','v100', 'v10m', 'u100', 'u10m', 't2mm', 't
 (train_x, train_y) = setDataset(df_train, x_columns)
 scaler = StandardScaler()
 train_x_scaled_fit = scaler.fit(train_x)
+store_dataset.close()
 
 config = {
     'sstk':{
