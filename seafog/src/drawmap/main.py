@@ -104,6 +104,7 @@ def saveLog(baseDir, ctx, time, type='map'):
     try:
         drawTools.createDir(logDir)
         logPath = os.path.join(logDir, fileName)
+        print('写入日志路径'+logPath)
         with open(logPath, 'w') as f_log:
             f_log.write(ctx)
     except Exception as e:
@@ -158,9 +159,11 @@ def main(time=None):
     ### 读取日志文件 ###
     logInfo = loadLog(imgBaseDir, arrow_initTime)
     if(logInfo['success']):
+        print('读取日志成功')
         logInfo = json.loads(logInfo['data'])
         isLogExists = True
-
+    else:
+        print('未找到当前时次日志')
     for iHour in fcHour_list:
         iTimeStep = f'{iHour:0>3d}'
         # 读取JSON中的数据, 有成功匹配的值则跳过
