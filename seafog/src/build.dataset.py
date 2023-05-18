@@ -54,7 +54,15 @@ def scan_hdf():
     build_dataset(df_list)
 
 def build_dataset(df_list):
-    '''创建数据集'''
+    '''
+    用于创建数据集。它的具体实现包括以下步骤：
+    将传入的多个 DataFrame 对象合并成一个大的 DataFrame，并按照 'init_time' 和 'fc_hour' 进行排序。
+    新增一列 'station_vis_linear'，其值为 'station_vis' 经过线性转换后的结果。
+    根据 'station_vis_cat' 的值将大的 DataFrame 划分成三个子集 df_fog，df_mist 和 df_clear。
+    按照比例划分 df_fog 雾集合，并根据日期切片 df_mist 轻雾和 df_clear 无雾情形。将 fog、mist 和 clear 合并，并随机打散以形成训练集、验证集和测试集。
+    增加雾的数量，使得 fog 训练集中的样本数等于 mist 和 clear 的训练集中的样本数之和。同时，保持 mist 和 clear 的数量相同。
+    将训练集、验证集和测试集合并到一个大的 DataFrame 中，并存储到 HDF 文件中。
+    '''
     df_all = pd.concat(df_list, ignore_index=True)
     df_all.sort_values(by=['init_time','fc_hour'], inplace=True, ignore_index=True)
     df_all['station_vis_linear'] = -1.0

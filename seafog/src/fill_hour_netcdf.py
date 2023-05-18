@@ -42,6 +42,14 @@ def get_elems():
     pass
 
 def fill_hour(filepath, file_name, name):
+    '''
+    这个函数用于在已有的NetCDF文件中，通过插值算法扩充数据逐小时。具体实现步骤为：
+    如果变量名name 在单层变量名列表single_level_name_list中，则打开文件filepath/file_name并读取其中的数据。
+    针对目标时刻iHour_target，如果该时刻已经存在，则跳过；否则，根据 fcHour_list列表寻找最近的两个已有时刻 left_hour和 right_hour。
+    根据插值算法，计算目标时刻 iHour_target对应时刻的数据值，并将其存储在新的变量名 
+    varname下。同时，将新数据写入到新文件 fullhour.{file_name}中。
+    如果变量名 name在多层变量名列表 multi_level_name_list中，则按照相似的方式进行操作，但不需要特别考虑层次信息。
+    '''
     if name in single_level_name_list:
         output_path = os.path.join(dir_path, './fullhour', f'fullhour.{file_name}')
         if os.path.exists(output_path):

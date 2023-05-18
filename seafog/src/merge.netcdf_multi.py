@@ -78,7 +78,13 @@ def get_elems():
     pass
 
 def convert_nc2hdf(selected_surface_file_list, selected_pressure_file_list, df_station, h5_store):
-
+    '''
+    这段代码是一个 Python 函数，将 NetCDF 格式的气象数据转换为 HDF 格式，并进行一些数据处理和特征提取。
+    函数的输入包括选择的地面文件列表、选择的气压层文件列表、站点数据和 HDF 数据存储路径。
+    首先，函数读取选择的地面文件和气压层文件，并将它们组合成一个数据集。
+    然后，对于每个时间步长，函数提取地面数据和指定气压层的数据，并计算逆温、相当位温等特征。
+    最后，函数将处理过的数据保存到 HDF 文件中。
+    '''
     ds_single_list = []
     
     for file_info in selected_surface_file_list:
@@ -172,6 +178,12 @@ def convert_nc2hdf(selected_surface_file_list, selected_pressure_file_list, df_s
     h5_store.close()
 
 def get_station_data_by_time(time_list, key, df_station):
+    '''
+    该函数的作用是从给定时间列表中获取指定站点和变量的数据。
+    具体来说，它接受三个参数：时间列表（time_list）、站点和变量的键（key）以及包含所有站点和变量数据的数据框（df_station）。
+    对于每个时间点，如果 df_station 中存在对应的数据，则返回包含该时间对应站点和变量数据的 pandas Series，
+    否则返回全为 NaN 的 Series。
+    '''
     a_nan = np.empty(len(time_list))
     a_nan.fill(np.nan)
     da = pd.Series(a_nan)
